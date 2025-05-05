@@ -108,29 +108,35 @@ def main(page: ft.Page):
         ft.dropdown.Option("Concluído"),
     ], value="Todos")
 
-    lista = ft.Column()
+    video_list = ft.ListView(
+        expand=True,
+        spacing=10,
+        padding=20,
+        auto_scroll=True
+    )
 
-    def carregar_dados():
-        lista.controls.clear()
-        itens = listar_itens()
-
+    def render_video_cards():
+        video_list.controls.clear()
+        itens = listar_itens()  # ou fetch_videos() se estiver usando essa função
+        
         for item in itens:
-            id_, n, c, s, m = item
-
-            if (filtro_categoria.value != "Todos" and c != filtro_categoria.value):
+            id_, titulo, categoria, status, modalidade = item
+            
+            # Aplique filtros se necessário
+            if (filtro_categoria.value != "Todos" and categoria != filtro_categoria.value):
                 continue
-            if (filtro_status.value != "Todos" and s != filtro_status.value):
+            if (filtro_status.value != "Todos" and status != filtro_status.value):
                 continue
-
-            lista.controls.append(
+                
+            video_list.controls.append(
                 ft.Container(
-                    bgcolor=cor_status(s),
+                    bgcolor=cor_status(status),
                     border_radius=10,
                     padding=10,
                     content=ft.Row([
-                        ft.Text(f"{n} ({c}, {s}, {m})", expand=True),
-                        ft.IconButton(icon=Icons.EDIT, on_click=lambda e, i=id_, n=n, c=c, s=s, m=m: editar_item(i, n, c, s, m)),
-                        ft.IconButton(icon=Icons.DELETE, on_click=lambda e, i=id_: deletar_item(i))
+                        ft.Text(f"{titulo} ({categoria}, {status}, {modalidade})", expand=True),
+                        ft.IconButton(icon=ft.icons.EDIT, on_click=lambda e, i=id_, t=titulo, c=categoria, s=status, m=modalidade: editar_item(i, t, c, s, m)),
+                        ft.IconButton(icon=ft.icons.DELETE, on_click=lambda e, i=id_: deletar_item(i))
                     ])
                 )
             )
@@ -141,11 +147,11 @@ def main(page: ft.Page):
             return
         inserir_item(nome.value, categoria.value, status.value, modalidade.value)
         nome.value = ""
-        carregar_dados()
+        render_video_cards()
 
     def deletar_item(item_id):
         delete_item(item_id)
-        carregar_dados()
+        render_video_cards()
 
     def editar_item(item_id, n, c, s, m):
         nome.value = n
@@ -158,7 +164,7 @@ def main(page: ft.Page):
             nome.value = ""
             botao_salvar.visible = False
             botao_adicionar.visible = True
-            carregar_dados()
+            render_video_cards()
 
         botao_salvar.on_click = salvar
         botao_salvar.visible = True
@@ -168,20 +174,26 @@ def main(page: ft.Page):
     botao_adicionar = ft.ElevatedButton("Adicionar", on_click=adicionar_item)
     botao_salvar = ft.ElevatedButton("Salvar edição", visible=False)
 
-    filtro_categoria.on_change = lambda e: carregar_dados()
-    filtro_status.on_change = lambda e: carregar_dados()
+    filtro_categoria.on_change = lambda e: render_video_cards()
+    filtro_status.on_change = lambda e: render_video_cards()
 
     botao_exportar = ft.ElevatedButton("Exportar CSV", on_click=lambda e: exportar_csv())
 
     page.add(
-        ft.Column([
-            ft.Row([nome, categoria, status, modalidade]),
-            ft.Row([botao_adicionar, botao_salvar, botao_exportar]),
-            ft.Row([filtro_categoria, filtro_status]),
-            lista
-        ])
+        ft.Text("📚 Controle de Estudos", size=24, weight=ft.FontWeight.BOLD),
+        ft.Row([nome, categoria, status, modalidade]),
+        ft.Row([botao_adicionar, botao_salvar, botao_exportar]),
+        ft.Row([filtro_categoria, filtro_status]),
+        ft.Container(
+            content=video_list,
+            height=400,  # Defina a altura desejada para a área de rolagem
+            border=ft.border.all(1, ft.colors.OUTLINE),
+            border_radius=10,
+            padding=10,
+            expand=True
+        )
     )
 
-    carregar_dados()
+    render_video_cards()
 
 ft.app(target=main)
